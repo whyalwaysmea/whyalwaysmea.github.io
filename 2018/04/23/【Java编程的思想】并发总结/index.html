@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>【Java编程的思想】并发总结 | whyalwaysmea</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=0.0.0"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/normalize/8.0.0/normalize.min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css"><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/pure/1.0.0/grids-responsive-min.css"><link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+ga('create','UA-118875582-1','auto');ga('send','pageview');
+</script></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">【Java编程的思想】并发总结</h1><a id="logo" href="/.">whyalwaysmea</a><p class="description"></p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> 首页</i></a><a href="/archives/"><i class="fa fa-archive"> 归档</i></a><a href="/about/"><i class="fa fa-user"> 关于</i></a><a href="/atom.xml"><i class="fa fa-rss"> 订阅</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">【Java编程的思想】并发总结</h1><div class="post-meta">Apr 23, 2018<span> | </span><span class="category"><a href="/categories/Java/">Java</a></span></div><a class="disqus-comment-count" data-disqus-identifier="2018/04/23/【Java编程的思想】并发总结/" href="/2018/04/23/【Java编程的思想】并发总结/#disqus_thread"></a><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">文章目录</div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#线程安全的机制"><span class="toc-number">1.</span> <span class="toc-text">线程安全的机制</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#synchronized"><span class="toc-number">1.1.</span> <span class="toc-text">synchronized</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#显式锁"><span class="toc-number">1.2.</span> <span class="toc-text">显式锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#volatile"><span class="toc-number">1.3.</span> <span class="toc-text">volatile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#原子变量和CAS"><span class="toc-number">1.4.</span> <span class="toc-text">原子变量和CAS</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#写时复制"><span class="toc-number">1.5.</span> <span class="toc-text">写时复制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ThreadLocal"><span class="toc-number">1.6.</span> <span class="toc-text">ThreadLocal</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#线程的协作机制"><span class="toc-number">2.</span> <span class="toc-text">线程的协作机制</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#wait-notify"><span class="toc-number">2.1.</span> <span class="toc-text">wait/notify</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#显式条件"><span class="toc-number">2.2.</span> <span class="toc-text">显式条件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#线程中断"><span class="toc-number">2.3.</span> <span class="toc-text">线程中断</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#协作工具类"><span class="toc-number">2.4.</span> <span class="toc-text">协作工具类</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#阻塞队列"><span class="toc-number">2.5.</span> <span class="toc-text">阻塞队列</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Future-FutureTask"><span class="toc-number">2.6.</span> <span class="toc-text">Future/FutureTask</span></a></li></ol></li></ol></div></div><div class="post-content"><h1 id="线程安全的机制"><a href="#线程安全的机制" class="headerlink" title="线程安全的机制"></a>线程安全的机制</h1><p>线程表示一条单独的执行流，每个线程有自己的执行计数器，有自己的栈，但可以共享内存，共享内存是实现线程协作的基础，但共享内存有两个问题：竞态条件和内存可见性。 </p>
+<h2 id="synchronized"><a href="#synchronized" class="headerlink" title="synchronized"></a>synchronized</h2><p><a href="(https://blog.csdn.net/u013435893/article/details/80050914">synchronized</a>)是一个关键字，既可以解决竞态问题，也可以解决内存可见性问题  </p>
+<p> synchronized保护的是对象，而不是代码，只有对同一个对象的synchronized方法调用，synchronized才能保证它们被顺序调用。对于实例方法，这个对象是this；对于静态方法，这个对象是类对象；对于代码块，需要指定哪个对象 </p>
+<p>synchronized不能尝试获取锁，也不能响应中断，还可能会死锁。相比于显式锁，synchronized简单易用，JVM也在不断优化它的实现 </p>
+<h2 id="显式锁"><a href="#显式锁" class="headerlink" title="显式锁"></a>显式锁</h2><p><a href="https://blog.csdn.net/u013435893/article/details/80094353#t7" target="_blank" rel="noopener">显式锁</a>是相当于synchronized隐式锁而言的，它可以实现synchronized同样的功能，但需要程序自己创建锁，调用锁相关接口，主要接口是Lock，主要实现类是ReentrantLock。 </p>
+<p>相比synchronized，显式锁支持以非阻塞方式获取锁，可以响应中断，可以限时，可以指定公平性，可以解决死锁问题，所以更加的灵活。 </p>
+<p>在一些读多写少、读操作可以完全并行的场景中，可以使用读写锁以提高并发度，读写锁的接口是ReadWriteLock，实现类是<a href="https://blog.csdn.net/u013435893/article/details/80249865#t0" target="_blank" rel="noopener">ReentrantReadWriteLock</a>。</p>
+<h2 id="volatile"><a href="#volatile" class="headerlink" title="volatile"></a>volatile</h2><p>synchronized和显式锁都是锁，使用锁可以实现安全，但使用锁是有成本的，获取不到锁的线程还需要等待，会有线程的上下文切换开销等。<br>如果共享的对象只有一个，操作也只是进行最简单的get/set操作，set也不依赖于之前的值，那就不存在竞态条件问题，而只有内存可见性问题，这时，在变量的声明上加上关键字volatile就可以了。</p>
+<p>volatile和synchronized的区别： </p>
+<ol>
+<li>volatile 仅能使用在变量级别； synchronized 则可以使用在实例方法、静态方法和代码块。  </li>
+<li>volatile 仅能实现变量的修改可见性，并不能保证原子性；synchronized 则可以保证变量的修改可见性和原子性 </li>
+<li>volatile 不会造成线程的阻塞；synchronized 可能会造成线程的阻塞。</li>
+<li>volatile 标记的变量不会被编译器优化； synchronized 标记的变量可以被编译器优化</li>
+</ol>
+<h2 id="原子变量和CAS"><a href="#原子变量和CAS" class="headerlink" title="原子变量和CAS"></a>原子变量和CAS</h2><p>使用volatile，set的新值不能依赖于旧值，但很多时候，set的新值与原来的值有关，同时也不一定需要锁，这个时候就可以考虑<a href="https://blog.csdn.net/u013435893/article/details/80094353#t0" target="_blank" rel="noopener">原子变量</a>。它们包含了一些以原子方式实现组合操作的方法。 </p>
+<p>原子变量的基础是CAS，一般的计算机系统都在硬件层次上直接支持CAS指令。相对于synchronized，它是乐观的，而synchronized是悲观的。</p>
+<h2 id="写时复制"><a href="#写时复制" class="headerlink" title="写时复制"></a>写时复制</h2><p>之所有会有线程安全的问题，是因为多个线程并发读写同一个对象，如果每个线程读写的对象都是不同的，或者如果共享访问的对象是只读的，不能修改，那就不存在线程安全问题了。 </p>
+<p><a href="https://blog.csdn.net/u013435893/article/details/80165696#t0" target="_blank" rel="noopener">写时复制</a>就是将共享访问的对象变为只读的，写的时候再使用锁，保证只有一个线程写，写的线程不是直接修改原对象，而是新创建一个对象，对该对象修改完毕后，再原子性地修改共享访问的变量，让它指向新的对象。</p>
+<h2 id="ThreadLocal"><a href="#ThreadLocal" class="headerlink" title="ThreadLocal"></a>ThreadLocal</h2><p><a href="https://blog.csdn.net/u013435893/article/details/80249865#t6" target="_blank" rel="noopener">ThreadLocal</a>让每个线程对同一变量，都有自己的独有副本。每个线程实际访问的对象都是自己的，自然也就不存在线程安全问题。</p>
+<h1 id="线程的协作机制"><a href="#线程的协作机制" class="headerlink" title="线程的协作机制"></a>线程的协作机制</h1><p>常见的协作场景：生产者/消费者协作模式、主从协作模式、同时开始、集合点等  </p>
+<h2 id="wait-notify"><a href="#wait-notify" class="headerlink" title="wait/notify"></a>wait/notify</h2><p><a href="https://blog.csdn.net/u013435893/article/details/80064247#t0" target="_blank" rel="noopener">wait/notify</a>与synchronized配合一起使用，是线程的基本协作机制。<br>每个对象都有一把锁和两个等待队列，一个是锁等待队列，放的是等待获取锁的线程；另一个是条件等待队列，放的是等待条件的线程。wait将自己加入条件等待队列，notify从条件队列上移除一个线程并唤醒，notifyAll移除所有线程并唤醒。</p>
+<p>wait/notify方法只能在synchronized代码块内被调用，调用wait时，线程会释放对象锁，被notify/notifyAll唤醒后，需要重新竞争锁，获取到锁后才会从wait调用中返回。 </p>
+<h2 id="显式条件"><a href="#显式条件" class="headerlink" title="显式条件"></a>显式条件</h2><p><a href="https://blog.csdn.net/u013435893/article/details/80094353#t14" target="_blank" rel="noopener">显式条件</a>和显式锁配合使用，与wait/notify相比，可以支持多个条件队列，代码更为易读，效率更高。 </p>
+<h2 id="线程中断"><a href="#线程中断" class="headerlink" title="线程中断"></a>线程中断</h2><p><a href="https://blog.csdn.net/u013435893/article/details/80064247#t2" target="_blank" rel="noopener">线程中断</a>并不是强迫终止一个线程，它是一种协作机制，是给线程传递一个取消信号，但是由线程来决定如何以及何时退出，线程在不同状态和IO操作时对中断有不同的反应。</p>
+<h2 id="协作工具类"><a href="#协作工具类" class="headerlink" title="协作工具类"></a>协作工具类</h2><p>信号量Semaphore用于限制对资源的并发访问数  </p>
+<p>倒计时门闩CountDownLatch主要用于不同角色线程间的同步，比如：同时开始多个线程；主线程等待多个从线程的结果 </p>
+<p>循环栅栏CyclicBarrier用于同一角色线程间的协调一致，所有线程在到达栅栏后都需要等待其他线程，等所有线程都到达后再一起通过，它是可以循环的。</p>
+<h2 id="阻塞队列"><a href="#阻塞队列" class="headerlink" title="阻塞队列"></a>阻塞队列</h2><p>阻塞队列封装了锁和条件，常用于生产者/消费者协作模式，只需要调用队列的入队/出队方法就可以了 </p>
+<ul>
+<li>无锁非阻塞并发队列：ConcurrentLinkedQueue和ConcurrentLinkedDeque</li>
+<li>普通阻塞队列：基于数组的ArrayBlockingQueue，基于链表的LinkedBlockingQueue和LinkedBlockingDeque</li>
+<li>优先级阻塞队列：PriorityBlockingQueue</li>
+<li>延时阻塞队列：DelayQueue</li>
+<li>其他阻塞队列：SynchronousQueue和LinkedTransferQueue</li>
+</ul>
+<h2 id="Future-FutureTask"><a href="#Future-FutureTask" class="headerlink" title="Future/FutureTask"></a>Future/FutureTask</h2><p>Future是一个接口，主要实现类是FutureTask。<br>Future封装了调用线程和执行线程关于执行状态和结果的同步，对于调用线程而言，它只需要通过Future就可以查询异步任务的状态、获取最终结果、取消任务等。<br>在常见的主从协作模式中，主线程往往需要获取子线程的结果，就可以使用Future</p>
+</div><div class="tags"><a href="/tags/Java/">Java</a></div><div id="disqus_thread"><div class="btn_click_load"><button class="disqus_click_btn">阅读评论（请确保 Disqus 可以正常加载）</button></div><script type="text/javascript">var disqus_config = function () {
+    this.page.url = 'http://yoursite.com/2018/04/23/【Java编程的思想】并发总结/';
+    this.page.identifier = '2018/04/23/【Java编程的思想】并发总结/';
+    this.page.title = '【Java编程的思想】并发总结';
+  };</script><script type="text/javascript" id="disqus-lazy-load-script">$.ajax({
+url: 'https://disqus.com/next/config.json',
+timeout: 2500,
+type: 'GET',
+success: function(){
+  var d = document;
+  var s = d.createElement('script');
+  s.src = '//whyalwaysmea.disqus.com/embed.js';
+  s.setAttribute('data-timestamp', + new Date());
+  (d.head || d.body).appendChild(s);
+  $('.disqus_click_btn').css('display', 'none');
+},
+error: function() {
+  $('.disqus_click_btn').css('display', 'block');
+}
+});</script><script type="text/javascript" id="disqus-click-load">$('.btn_click_load').click(() => {  //click to load comments
+    (() => { // DON'T EDIT BELOW THIS LINE
+        var d = document;
+        var s = d.createElement('script');
+        s.src = '//whyalwaysmea.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', + new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    $('.disqus_click_btn').css('display','none');
+});</script><script type="text/javascript" id="disqus-count-script">$(function() {
+     var xhr = new XMLHttpRequest();
+     xhr.open('GET', '//disqus.com/next/config.json', true);
+     xhr.timeout = 2500;
+     xhr.onreadystatechange = function () {
+       if (xhr.readyState === 4 && xhr.status === 200) {
+         $('.post-meta .post-comments-count').show();
+         var s = document.createElement('script');
+         s.id = 'dsq-count-scr';
+         s.src = 'https://whyalwaysmea.disqus.com/count.js';
+         s.async = true;
+         (document.head || document.body).appendChild(s);
+       }
+     };
+     xhr.ontimeout = function () { xhr.abort(); };
+     xhr.send(null);
+   });
+</script></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="http://yoursite.com"/></form></div><div class="widget"><div class="widget-title"><i class="fa fa-folder-o"> 分类</i></div><ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> 标签</i></div><div class="tagcloud"><a href="/tags/Java/" style="font-size: 15px;">Java</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> 最近文章</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/04/23/【Java编程的思想】并发总结/">【Java编程的思想】并发总结</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-comment-o"> 最近评论</i></div><script type="text/javascript" src="//whyalwaysmea.disqus.com/recent_comments_widget.js?num_items=5&amp;hide_avatars=1&amp;avatar_size=32&amp;excerpt_length=20&amp;hide_mods=1"></script></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2018 <a href="/." rel="nofollow">whyalwaysmea.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=0.0.0" async></script><script type="text/javascript" src="//cdn.bootcss.com/fancybox/3.3.5/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=0.0.0" async></script><link rel="stylesheet" type="text/css" href="//cdn.bootcss.com/fancybox/3.3.5/jquery.fancybox.min.css"><script type="text/javascript" src="/js/codeblock-resizer.js?v=0.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=0.0.0"></script></div></body></html>
